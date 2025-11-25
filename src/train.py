@@ -16,7 +16,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 
 from utils import get_logger, set_seed, ensure_dir
-from model import build_lstm
+from model import build_lstm1
 
 logger = get_logger("train")
 
@@ -155,7 +155,7 @@ def main(config_path: str, data_csv: str = None):
     )
 
     # Строим модель и тренируем
-    model = build_lstm(window, n_features, lr=float(config.get("learning_rate", 0.001)))
+    model = build_lstm1(window, n_features, lr=float(config.get("learning_rate", 0.001)))
 
     model_dir = config.get("model_dir", "models")
     ensure_dir(model_dir)
@@ -164,7 +164,7 @@ def main(config_path: str, data_csv: str = None):
     checkpoint = ModelCheckpoint(
         checkpoint_path, save_best_only=True, monitor="val_loss", verbose=1
     )
-    es = EarlyStopping(monitor="val_loss", patience=8, restore_best_weights=True, verbose=1)
+    es = EarlyStopping(monitor="val_loss", patience=20, restore_best_weights=True, verbose=1)
     rl = ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=4, verbose=1)
 
     history = model.fit(

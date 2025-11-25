@@ -4,6 +4,7 @@ import argparse
 import os
 import logging
 import pandas as pd
+import datetime
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,32 +31,32 @@ def fetch_klines(symbol, interval, limit=1000, start_time=None):
     data = response.json()
     return data
 
-
-def fetch_klines_paginated(symbol, interval, total_limit):
+def fetch_all_klines(symbol, interval, start_time=None):
     limit_per_request = 1000
     all_klines = []
-    start_time = 0  # Начинаем с самого раннего времени (эпоха в мс)
 
-    while len(all_klines) < total_limit:
-        to_fetch = min(limit_per_request, total_limit - len(all_klines))
-        klines = fetch_klines(symbol, interval, limit=to_fetch, start_time=start_time)
+    current_start_time = start_time
+    while True:
+        klines = fetch_klines(symbol, interval, limit=limit_per_request, start_time=current_start_time)
         if not klines:
-            logger.info("No more data returned by API.")
+            logger.info("No more data returned by API, finishing.")
             break
 
         all_klines.extend(klines)
-        last_close_time = klines[-1][6]  # close_time индекса 6
-        start_time = last_close_time + 1
+        last_close_time = klines[-1][6]  # close_time индекс 6
+        current_start_time = last_close_time + 1
 
-        logger.info(f"Fetched {len(all_klines)} / {total_limit} klines so far.")
+        last_close_dt = datetime.datetime.fromtimestamp(last_close_time / 1000)
+        logger.info(f"Fetched {len(all_klines)} klines. Last close time: {last_close_dt}")
+
+        # Если получили меньше, чем limit_per_request — значит данных больше нет
+        if len(klines) < limit_per_request:
+            logger.info("Reached end of available data.")
+            break
 
         time.sleep(0.1)
 
-        if len(klines) < to_fetch:
-            break
-
-    return all_klines[:total_limit]
-
+    return all_klines
 
 def klines_to_dataframe(klines):
     columns = [
@@ -75,16 +76,23 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--symbol", default="BTCUSDT", help="Trading pair symbol")
     parser.add_argument("--interval", default="1h", help="Kline interval")
-    parser.add_argument("--limit", type=int, default=1000, help="Total number of klines to fetch")
+    parser.add_argument("--start_date", default=None, help="Start date YYYY-MM-DD to begin fetching data")
     parser.add_argument("--output", default=None, help="Output CSV filename")
     args = parser.parse_args()
+
+    if not args.start_date:
+        logger.error("Please specify --start_date (e.g. 2023-01-01)")
+        return
 
     output_file = args.output or f"data/raw_{args.symbol}_{args.interval}.csv"
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
-    logger.info(f"Starting fetching {args.limit} klines for {args.symbol} at interval {args.interval}")
+    dt = datetime.datetime.strptime(args.start_date, "%Y-%m-%d")
+    start_time = int(dt.timestamp() * 1000)  # в миллисекундах
 
-    klines = fetch_klines_paginated(args.symbol, args.interval, args.limit)
+    logger.info(f"Starting fetching klines for {args.symbol} at interval {args.interval} from {args.start_date} until now")
+
+    klines = fetch_all_klines(args.symbol, args.interval, start_time=start_time)
     if not klines:
         logger.error("No klines fetched. Exiting.")
         return
