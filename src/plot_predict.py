@@ -6,7 +6,7 @@ from tensorflow.keras.models import load_model
 
 # Параметры
 processed_data_path = "../data/processed.csv"  # сюда путь к твоему processed.csv
-model_path = "../models/lstm_best.keras"
+model_path = "../save/lstm_best.keras"
 scaler_path = "../artifacts/scaler.pkl"
 
 # Загружаем данные
