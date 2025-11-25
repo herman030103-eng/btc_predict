@@ -33,15 +33,15 @@ def prepare_input(data_path: str, window: int, n_features: int):
     if not feat_cols:
         raise ValueError("Processed CSV не содержит колонок, начинающихся с 't-'.")
 
-    # Берём последние window строк
-    df_window = df.tail(window)  # <- тут берём последние 60 строк
-    if df_window.shape[0] < window:
-        raise ValueError(f"В данных недостаточно строк для окна {window}.")
+    # Каждая строка в processed.csv уже содержит все window*n_features признаков
+    # Берём только последнюю строку для предсказания
+    last_row = df.iloc[[-1]]
 
-    X_flat = df_window[feat_cols].values
-    if X_flat.shape[1] != window * n_features:
+    X_flat = last_row[feat_cols].values
+    expected_cols = window * n_features
+    if X_flat.shape[1] != expected_cols:
         raise ValueError(
-            f"Форма входных данных {X_flat.shape}, ожидалось (window*n_features)={window * n_features}"
+            f"Форма входных данных {X_flat.shape}, ожидалось (1, {expected_cols})"
         )
 
     X = X_flat.reshape(1, window, n_features)
@@ -97,9 +97,7 @@ def main(config_path: str, data_path: str = None, model_path: str = None):
     feat_cols = [c for c in df.columns if c.startswith("t-")]
     n_features = infer_n_features_from_processed_columns(feat_cols, window)
 
-    print(f"window = {window}")
-    print(f"n_features = {n_features}")
-    print(f"feat_cols sample = {feat_cols[:5]}")
+    logger.info(f"window = {window}, n_features = {n_features}")
 
     X = prepare_input(data_path, window, n_features)
 
