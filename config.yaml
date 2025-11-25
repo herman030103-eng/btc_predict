@@ -1,0 +1,12 @@
+symbol: "BTCUSDT"
+interval: "1h" # 1m, 5m, 1h, 1d и т.д.
+limit: 1000
+window_size: 60
+train_split: 0.8
+batch_size: 64
+epochs: 100
+model_dir: "models"
+seed: 42
+learning_rate: 0.001
+use_indicators: true
+scaler: "minmax" # or standard
