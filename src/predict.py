@@ -35,13 +35,13 @@ def prepare_input(data_path: str, window: int, n_features: int):
 
     # Каждая строка в processed.csv уже содержит все window*n_features признаков
     # Берём только последнюю строку для предсказания
-    last_row = df.iloc[[-1]]
+    last_row = df.iloc[-1:]
 
     X_flat = last_row[feat_cols].values
     expected_cols = window * n_features
     if X_flat.shape[1] != expected_cols:
         raise ValueError(
-            f"Форма входных данных {X_flat.shape}, ожидалось (1, {expected_cols})"
+            f"Input data shape {X_flat.shape}, expected (1, {expected_cols})"
         )
 
     X = X_flat.reshape(1, window, n_features)
